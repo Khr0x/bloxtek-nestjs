@@ -2,7 +2,7 @@ import { Injectable, Inject, BadRequestException, NotFoundException } from '@nes
 import { FindOneOptions, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { hashPassword } from "../../common/utils/hash.utils";
-import { CreateUserDto, UpdateUserDto, UserDto } from './dtos';
+import { CreateUserDto, UpdateUserDto, UserDto, UserFullDto } from './dtos';
 import { UserMapper } from './mappers/user.mapper';
 import { RolesService } from '../roles/roles.service';
 import { Role } from '../roles/entities/role.entity';
@@ -15,6 +15,11 @@ export class UsersService {
     private readonly rolesService: RolesService,
   ) {}
 
+  /**
+   * Servicio para crear un nuevo usuario
+   * @param createUserDto Datos para crear el usuario
+   * @returns Usuario creado
+   */
   async create(createUserDto: CreateUserDto): Promise<UserDto> {
     const { email, password, roleNames, ...rest } = createUserDto;
     const existingUser = await this.userRepository.findOne({ where: { email } });
@@ -47,12 +52,19 @@ export class UsersService {
     return UserMapper.toDto(savedUser);
   }
 
+  /** Servicio para obtener todos los usuarios activos
+   * @returns Lista de usuarios activos
+   */
   async findAll(): Promise<UserDto[]> {
     const users = await this.userRepository.find({ where: {isActive: true}, relations: ['roles'] });
     return users.map(user => UserMapper.toDto(user));
   }
 
-  async findOne(filters: FindOneOptions<User>): Promise<UserDto> {
+  /** Servicio para obtener un usuario por filtros
+   * @param filters Filtros para buscar el usuario
+   * @returns Usuario encontrado
+   */
+  async findOne(filters: FindOneOptions<UserDto>): Promise<UserDto> {
     const user = await this.userRepository.findOne(filters);
 
     if (!user) {
@@ -61,14 +73,23 @@ export class UsersService {
     return UserMapper.toDto(user);
   }
 
-  async findOneByEmail(email: string): Promise<User | null> {
-    return await this.userRepository.findOne({ 
+  /** Servicio para obtener un usuario por email
+   * @param email Email del usuario
+   * @returns Usuario encontrado o null
+   */
+  async findOneByEmail(email: string): Promise<UserFullDto | null> {
+     const user = await this.userRepository.findOne({ 
       where: { email, isActive: true },
-      relations: ['roles'],
-      select: ['id', 'email', 'password', 'name', 'roles']
+      relations: ['roles', 'roles.permissions']
     });
+    return user ? UserMapper.toDtoFull(user) : null;
   }
 
+  /** Servicio para actualizar un usuario
+   * @param id ID del usuario a actualizar
+   * @param updateUserDto Datos para actualizar el usuario
+   * @returns Usuario actualizado
+   */
   async update(id: string, updateUserDto: UpdateUserDto): Promise<UserDto> {
     const user = await this.findOne({ where: { id, isActive: true }, relations: ['roles'] });
 
@@ -92,6 +113,9 @@ export class UsersService {
     return UserMapper.toDto(updatedUser);
   }
 
+  /** Servicio para eliminar (desactivar) un usuario
+   * @param id ID del usuario a eliminar
+   */
   async delete(id: string): Promise<void> {
     const user = await this.findOne({ where: { id, isActive: true } });
     user.isActive = false;

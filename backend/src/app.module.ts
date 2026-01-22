@@ -8,6 +8,7 @@ import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { InitSeeder } from './database/seeds/init.seeder';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { InitSeeder } from './database/seeds/init.seeder';
       },
     }),
     DatabaseModule,
+    AuthModule,
     UsersModule,
     RolesModule,
     PermissionsModule

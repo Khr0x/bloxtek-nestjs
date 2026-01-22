@@ -27,3 +27,11 @@ export async function comparePassword(
 ): Promise<boolean> {
   return bcrypt.compare(password, hashedPassword);
 }
+
+export async function genSalt(length: number): Promise<string> {
+  return await bcrypt.genSalt(length);
+}
+
+export async function hash(data: string, saltRounds: number): Promise<string> {
+  return await bcrypt.hash(data, saltRounds);
+}
