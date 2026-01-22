@@ -1,5 +1,5 @@
 import { Role } from "../../../modules/roles/entities/role.entity";
-import { CreateUserDto, UserDto } from "../dtos";
+import { CreateUserDto, UserDto, UserFullDto, UserRolesDto } from "../dtos";
 import { User } from "../entities/user.entity";
 
 
@@ -11,6 +11,25 @@ export class UserMapper {
         userDto.name = user.name;
         userDto.email = user.email;
         userDto.isActive = user.isActive;
+        userDto.createdAt = user.createdAt;
+        userDto.updatedAt = user.updatedAt;
+        return userDto;
+    }
+
+    static toDtoFull(user: User): UserFullDto {
+        const userDto = new UserFullDto();
+        userDto.id = user.id;
+        userDto.name = user.name;
+        userDto.email = user.email;
+        userDto.password = user.password;
+        userDto.isActive = user.isActive;
+        userDto.roles = user.roles.map(role => {
+            const roleDto = new UserRolesDto();
+            roleDto.id = role.id;
+            roleDto.name = role.name;
+            roleDto.permissions = role.permissions.map(perm => perm.slug);
+            return roleDto;
+        });
         userDto.createdAt = user.createdAt;
         userDto.updatedAt = user.updatedAt;
         return userDto;
