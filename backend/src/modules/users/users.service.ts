@@ -1,0 +1,101 @@
+import { Injectable, Inject, BadRequestException, NotFoundException } from '@nestjs/common';
+import { FindOneOptions, Repository } from 'typeorm';
+import { User } from './entities/user.entity';
+import { hashPassword } from "../../common/utils/hash.utils";
+import { CreateUserDto, UpdateUserDto, UserDto } from './dtos';
+import { UserMapper } from './mappers/user.mapper';
+import { RolesService } from '../roles/roles.service';
+import { Role } from '../roles/entities/role.entity';
+
+@Injectable()
+export class UsersService {
+  constructor(
+    @Inject('USER_REPOSITORY')
+    private userRepository: Repository<User>,
+    private readonly rolesService: RolesService,
+  ) {}
+
+  async create(createUserDto: CreateUserDto): Promise<UserDto> {
+    const { email, password, roleNames, ...rest } = createUserDto;
+    const existingUser = await this.userRepository.findOne({ where: { email } });
+    if (existingUser) {
+      throw new BadRequestException('El correo electrónico ya está registrado');
+    }
+    const hashedPassword = await hashPassword(password);
+    
+    let roles: Role[] = [];
+    if (roleNames && roleNames.length > 0) {
+      for (const roleName of roleNames) {
+        const role = await this.rolesService.findOne({ where: { name: roleName } });
+        if (!role) {
+          throw new BadRequestException(`Rol "${roleName}" no encontrado`);
+        }
+        roles.push(role);
+      }
+    } else {
+      const defaultRole = await this.rolesService.findOne({ where: { name: 'USER' } });
+      if (!defaultRole) {
+        throw new BadRequestException('Rol por defecto "USER" no encontrado');
+      }
+      roles = [defaultRole];
+    }
+    
+    
+    const userEntity = UserMapper.toEntityFromCreate({ ...rest, email, password: hashedPassword }, roles);
+    const newUser = this.userRepository.create(userEntity);
+    const savedUser = await this.userRepository.save(newUser);
+    return UserMapper.toDto(savedUser);
+  }
+
+  async findAll(): Promise<UserDto[]> {
+    const users = await this.userRepository.find({ where: {isActive: true}, relations: ['roles'] });
+    return users.map(user => UserMapper.toDto(user));
+  }
+
+  async findOne(filters: FindOneOptions<User>): Promise<UserDto> {
+    const user = await this.userRepository.findOne(filters);
+
+    if (!user) {
+      throw new NotFoundException(`Usuario no encontrado`);
+    }
+    return UserMapper.toDto(user);
+  }
+
+  async findOneByEmail(email: string): Promise<User | null> {
+    return await this.userRepository.findOne({ 
+      where: { email, isActive: true },
+      relations: ['roles'],
+      select: ['id', 'email', 'password', 'name', 'roles']
+    });
+  }
+
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<UserDto> {
+    const user = await this.findOne({ where: { id, isActive: true }, relations: ['roles'] });
+
+    let userRoles: Role[] = [];
+    if (updateUserDto.roleNames) {
+      const roles: Role[] = [];
+      for (const roleName of updateUserDto.roleNames) {
+        const role = await this.rolesService.findOne({ where: { name: roleName } });
+        if (!role) {
+          throw new BadRequestException(`Rol "${roleName}" no encontrado`);
+        }
+        roles.push(role);
+      }
+      userRoles = roles;
+    }
+
+    const entity = UserMapper.toEntity(user, userRoles.length > 0 ? userRoles : user['roles']);
+    this.userRepository.merge(entity, updateUserDto);
+    
+    const updatedUser = await this.userRepository.save(entity);
+    return UserMapper.toDto(updatedUser);
+  }
+
+  async delete(id: string): Promise<void> {
+    const user = await this.findOne({ where: { id, isActive: true } });
+    user.isActive = false;
+    await this.userRepository.save(user);
+  }
+
+}
