@@ -1,31 +1,64 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# BLOXTEK Backend - NestJS API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend de la plataforma Bloxtek construido con NestJS, TypeORM y PostgreSQL.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 📋 Requisitos Previos
 
-## Description
+- Node.js 20+ y pnpm
+- PostgreSQL 15+
+- Docker y Docker Compose (opcional)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🚀 Configuración del Proyecto
 
-## Project setup
+### 1. Instalar dependencias
+
+```bash
+pnpm install
+```
+
+### 2. Configurar variables de entorno
+
+```bash
+# Copiar el archivo de ejemplo
+cp .env.example .env.local
+
+# Editar .env.local con tus valores
+```
+
+**Variables requeridas en `.env.local`:**
+
+```env
+# Base de datos
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=tu_password_aqui
+DB_NAME=postgres
+
+# JWT (mínimo 32 caracteres en producción)
+JWT_SECRET=tu_secreto_jwt_aqui_minimo_32_caracteres
+JWT_EXPIRATION=15m
+
+# Seguridad
+PASSWORD_SALT_ROUNDS=10
+
+# Usuario administrador inicial (para seeders)
+ADMIN_EMAIL=admin@bloxtek.com
+ADMIN_PASSWORD=Admin1234*!
+```
+
+### 3. Iniciar la base de datos (con Docker)
+
+```bash
+# Desde la raíz del proyecto
+docker-compose up -d db
+```
+
+### 4. Ejecutar migraciones y seeders
+
+La aplicación ejecuta automáticamente los seeders al iniciar (ver `InitSeeder`).
+
+## 📦 Scripts Disponibles
 
 ```bash
 $ pnpm install

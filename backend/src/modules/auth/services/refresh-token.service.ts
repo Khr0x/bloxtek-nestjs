@@ -43,7 +43,7 @@ export class RefreshTokenService {
     }
   }
 
-   async revokeAllByUser(userId: string): Promise<void> {
+   async revokeAllUserTokens(userId: string): Promise<void> {
     await this.refreshTokenRepo.update(
       { user: { id: userId } },
       { revoked: true }

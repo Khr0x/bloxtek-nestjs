@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -9,14 +10,21 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
-      transform: true, // Convierte los tipos automáticamente (ej: string '1' a number 1)
+      transform: true,
       transformOptions: {
         enableImplicitConversion: true,
       },
     }),
   );
 
-  app.enableCors();
+  app.enableCors({
+      origin: process.env.FRONTEND_URL || '',
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
+  app.use(cookieParser());
 
   await app.listen(process.env.PORT ?? 3000);
 }

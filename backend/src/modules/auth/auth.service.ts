@@ -75,6 +75,7 @@ export class AuthService {
     return token;
   }
 
+  /** Servicio para refrescar tokens */
   async refresh(oldToken: string) {
 
      const payload = await this.refreshTokenService.findValidToken(oldToken);
@@ -92,6 +93,13 @@ export class AuthService {
       };
     }
     throw new UnauthorizedException('Refresh token logic needs complete implementation'); 
+  }
+
+  /**
+   * Revoca todos los refresh tokens de un usuario (útil para logout global)
+   */
+  async logout(userId: string): Promise<void> {
+    await this.refreshTokenService.revokeAllUserTokens(userId);
   }
 
 
