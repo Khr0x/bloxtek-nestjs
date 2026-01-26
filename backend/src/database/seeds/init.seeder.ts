@@ -25,6 +25,7 @@ export class InitSeeder implements OnModuleInit {
       { slug: 'users:create', description: 'Crear Usuarios' },
       { slug: 'users:update', description: 'Editar Usuarios' },
       { slug: 'users:delete', description: 'Eliminar Usuarios' },
+      { slug: 'roles:read', description: 'Leer Roles' },
     ];
 
     const savedPermissions: Permission[] = [];
@@ -44,12 +45,12 @@ export class InitSeeder implements OnModuleInit {
       {
         name: 'ADMIN',
         description: 'Super Administrador',
-        permissions: getPerms(['dashboard:view', 'users:read', 'users:create', 'users:update', 'users:delete']),
+        permissions: getPerms(['dashboard:view', 'users:read', 'users:create', 'users:update', 'users:delete', 'roles:read']),
       },
       {
         name: 'MANAGER',
         description: 'Gestor de Contenido',
-        permissions: getPerms(['dashboard:view', 'users:read', 'users:create', 'users:update']),
+        permissions: getPerms(['dashboard:view', 'users:read', 'users:create', 'users:update', 'roles:read']),
       },
       {
         name: 'USER',
@@ -65,12 +66,17 @@ export class InitSeeder implements OnModuleInit {
 
       if (!existingRole) {
         await this.rolesService.create(r);
-        console.log(`Rol ${r.name} creado.`);
       }
     }
 
     const adminEmail = process.env.ADMIN_EMAIL || '';
     const adminPassword = process.env.ADMIN_PASSWORD || '';
+
+    const managerEmail = process.env.MANAGER_EMAIL || '';
+    const managerPassword = process.env.MANAGER_PASSWORD || '';
+
+    const userEmail = process.env.USER_EMAIL || '';
+    const userPassword = process.env.USER_PASSWORD || '';
 
     try {
         await this.usersService.create({
@@ -80,8 +86,34 @@ export class InitSeeder implements OnModuleInit {
         roleNames: ['ADMIN'],
       });
       this.logger.log(`Usuario administrador creado con email: ${adminEmail} y contraseña: ${adminPassword}`);
-    } catch (error) {
+      } catch (error) {
        this.logger.log(`El usuario administrador con email: ${adminEmail} ya existe.`);
+    }
+
+    try {
+        await this.usersService.create({
+        name: 'Content Manager',
+        email: managerEmail,
+        password: managerPassword,
+        roleNames: ['MANAGER'],
+      });
+      this.logger.log(`Usuario gestor creado con email: ${managerEmail} y contraseña: ${managerPassword}`);
+
+    } catch (error) {
+      this.logger.log(`El usuario gestor con email: ${managerEmail} ya existe.`);
+    }
+
+    try {
+      await this.usersService.create({
+        name: 'Standard User',
+        email: userEmail,
+        password: userPassword,
+        roleNames: ['USER'],
+      });
+      this.logger.log(`Usuario estándar creado con email: ${userEmail} y contraseña: ${userPassword}`);
+
+    } catch (error) {
+      this.logger.log(`El usuario estándar con email: ${userEmail} ya existe.`);
     }
   }
 }

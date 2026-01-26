@@ -37,8 +37,7 @@ api.interceptors.response.use(
     const isAuthEndpoint = 
       originalRequest.url?.includes('/auth/login') ||
       originalRequest.url?.includes('/auth/register') ||
-      originalRequest.url?.includes('/auth/refresh') ||
-      originalRequest.url?.includes('/auth/me');
+      originalRequest.url?.includes('/auth/refresh');
 
     if (isAuthEndpoint) {
       return Promise.reject(error);
@@ -69,8 +68,15 @@ api.interceptors.response.use(
         await api.post('/api/v1/auth/refresh');
         processQueue(null);
         return api(originalRequest);
-      } catch (refreshError) {
+      } catch (refreshError: any) {
         processQueue(refreshError);
+        
+        if (refreshError.response?.status === 401) {
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+          }
+        }
+        
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

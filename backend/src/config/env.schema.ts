@@ -25,4 +25,16 @@ export const envSchema = Joi.object({
     .min(8)
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
     .message('ADMIN_PASSWORD debe contener mayúsculas, minúsculas, números y caracteres especiales'),
+  MANAGER_EMAIL: Joi.string().email().required(),
+  MANAGER_PASSWORD: Joi.string()
+    .required()
+    .min(8)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .message('MANAGER_PASSWORD debe contener mayúsculas, minúsculas, números y caracteres especiales'),
+  USER_EMAIL: Joi.string().email().required(),
+  USER_PASSWORD: Joi.string()
+    .required()
+    .min(8)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .message('USER_PASSWORD debe contener mayúsculas, minúsculas, números y caracteres especiales'),
 });

@@ -11,6 +11,7 @@ interface PermissionGuardProps {
   requireAll?: boolean;
   fallback?: ReactNode;
   showError?: boolean;
+  mode?: 'message' | 'hide' | 'disable';
 }
 
 export function PermissionGuard({
@@ -20,26 +21,39 @@ export function PermissionGuard({
   requireAll = false,
   fallback,
   showError = true,
+  mode = 'message',
 }: PermissionGuardProps) {
   const { permissions: userPermissions, hasPermission, hasAnyPermission } = useAuth();
-
-  // Si se proporciona un solo permiso
+  
+  let hasAccess = true;
+  
   if (permission && !hasPermission(permission)) {
-    return fallback || (showError ? <ForbiddenMessage permission={permission} /> : null);
+    hasAccess = false;
   }
-
-  // Si se proporcionan múltiples permisos
+  
   if (permissions.length > 0) {
-    const hasAccess = requireAll
+    hasAccess = requireAll
       ? permissions.every(p => userPermissions.includes(p))
       : hasAnyPermission(permissions);
-
-    if (!hasAccess) {
-      return fallback || (showError ? <ForbiddenMessage permissions={permissions} /> : null);
-    }
   }
 
-  return <>{children}</>;
+  if (hasAccess) {
+    return <>{children}</>;
+  }
+
+  if (mode === 'hide') {
+    return fallback || null;
+  }
+
+  if (mode === 'disable') {
+    return (
+      <div className="opacity-50 cursor-not-allowed pointer-events-none">
+        {children}
+      </div>
+    );
+  }
+
+  return fallback || (showError ? <ForbiddenMessage permission={permission} permissions={permissions} /> : null);
 }
 
 function ForbiddenMessage({ permission, permissions }: { permission?: string; permissions?: string[] }) {

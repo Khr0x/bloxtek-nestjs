@@ -1,51 +1,40 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api } from '@/lib/axios';
 import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { PermissionGuard } from '@/components/permissions/PermissionGuard';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  isActive: boolean;
-  roles: Array<{
-    name: string;
-  }>;
-  createdAt: string;
-}
+import { useUsers } from '@/hooks';
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { 
+    users, 
+    isLoading, 
+    error, 
+    isForbidden, 
+    fetchUsers, 
+    deleteUser 
+  } = useUsers();
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      setIsLoading(true);
-      const response = await api.get('/api/v1/users');
-      setUsers(response.data);
-    } catch (error) {
-      console.error('Error al cargar usuarios:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const params = statusFilter === 'all' ? undefined : { isActive: statusFilter === 'active' };
+    fetchUsers(params);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
     
-    try {
-      await api.delete(`/api/v1/users/${id}`);
-      setUsers(users.filter(user => user.id !== id));
-    } catch (error) {
-      console.error('Error al eliminar usuario:', error);
+    const result = await deleteUser(id);
+    
+    if (!result.success) {
+      if (result.isForbidden) {
+        alert('No tienes permiso para eliminar este usuario.');
+      } else {
+        alert(error || 'Error al eliminar el usuario');
+      }
     }
   };
 
@@ -62,13 +51,28 @@ export default function UsersPage() {
     );
   }
 
+  if (error && !isForbidden) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-destructive mb-4">{error}</p>
+          <button 
+            onClick={() => fetchUsers()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <PermissionGuard 
       permissions={["users:read"]} 
       requireAll={false}
     >
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Usuarios</h1>
@@ -76,18 +80,32 @@ export default function UsersPage() {
             Gestiona los usuarios del sistema
           </p>
         </div>
-        <Link
-          href="/users/create"
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Nuevo Usuario
-        </Link>
+         <PermissionGuard permission="users:update" mode="hide">
+          <Link
+            href="/users/create"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Nuevo Usuario
+          </Link>
+         </PermissionGuard>
+
       </div>
 
-      {/* Search Bar */}
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex gap-4 mb-6">
+        <div className="w-48">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+            className="w-full px-4 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
+          >
+            <option value="all">Todos los estados</option>
+            <option value="active">Activos</option>
+            <option value="inactive">Inactivos</option>
+          </select>
+        </div>
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <input
           type="text"
           placeholder="Buscar por nombre o email..."
@@ -95,9 +113,9 @@ export default function UsersPage() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-10 pr-4 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
         />
+        </div>
       </div>
 
-      {/* Users Table */}
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -132,7 +150,7 @@ export default function UsersPage() {
                   <tr key={user.id} className="hover:bg-accent/50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="h-10 w-10 flex-shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
+                        <div className="h-10 w-10 shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
                           <span className="text-sm font-medium text-primary">
                             {user.name.charAt(0).toUpperCase()}
                           </span>
@@ -149,14 +167,18 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-1">
-                        {user.roles.map((role, index) => (
-                          <span
-                            key={index}
-                            className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary"
-                          >
-                            {role.name}
-                          </span>
-                        ))}
+                        {user.roles && user.roles.length > 0 ? (
+                          user.roles.map((role, index) => (
+                            <span
+                              key={index}
+                              className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary"
+                            >
+                              {role.name}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Sin roles</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -172,20 +194,25 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
-                        <Link
-                          href={`/users/${user.id}/edit`}
-                          className="p-2 text-muted-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors"
-                          title="Editar"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(user.id)}
-                          className="p-2 text-muted-foreground hover:text-destructive hover:bg-accent rounded-lg transition-colors"
-                          title="Eliminar"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <PermissionGuard permission="users:update" mode="hide">
+                          <Link
+                            href={`/users/${user.id}/edit`}
+                            className="p-2 text-muted-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors"
+                            title="Editar"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Link>
+                        </PermissionGuard>
+
+                        <PermissionGuard permission="users:delete" mode="hide">
+                          <button
+                            onClick={() => handleDelete(user.id)}
+                            className="p-2 text-muted-foreground hover:text-destructive hover:bg-accent rounded-lg transition-colors"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </PermissionGuard>
                       </div>
                     </td>
                   </tr>
@@ -196,7 +223,6 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="mt-6 flex items-center justify-between text-sm text-muted-foreground">
         <div>
           Mostrando {filteredUsers.length} de {users.length} usuarios

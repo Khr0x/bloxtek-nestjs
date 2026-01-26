@@ -5,7 +5,7 @@ import { hashPassword } from "../../common/utils/hash.utils";
 import { CreateUserDto, UpdateUserDto, UserDto, UserFullDto } from './dtos';
 import { UserMapper } from './mappers/user.mapper';
 import { RolesService } from '../roles/roles.service';
-import { Role } from '../roles/entities/role.entity';
+import { RoleDto } from '../roles/dtos/role.dto';
 
 @Injectable()
 export class UsersService {
@@ -28,7 +28,7 @@ export class UsersService {
     }
     const hashedPassword = await hashPassword(password);
     
-    let roles: Role[] = [];
+    let roles: RoleDto[] = [];
     if (roleNames && roleNames.length > 0) {
       for (const roleName of roleNames) {
         const role = await this.rolesService.findOne({ where: { name: roleName } });
@@ -55,22 +55,22 @@ export class UsersService {
   /** Servicio para obtener todos los usuarios activos
    * @returns Lista de usuarios activos
    */
-  async findAll(): Promise<UserDto[]> {
-    const users = await this.userRepository.find({ where: {isActive: true}, relations: ['roles'] });
-    return users.map(user => UserMapper.toDto(user));
+  async findAll(filters: FindOneOptions<UserDto>): Promise<UserFullDto[]> {
+    const users = await this.userRepository.find({where: { ...filters.where, deleted: false }, relations: ['roles', 'roles.permissions'] });
+    return users.map(user => UserMapper.toDtoFull(user));
   }
 
   /** Servicio para obtener un usuario por filtros
    * @param filters Filtros para buscar el usuario
    * @returns Usuario encontrado
    */
-  async findOne(filters: FindOneOptions<UserDto>): Promise<UserDto> {
-    const user = await this.userRepository.findOne(filters);
+  async findOne(filters: FindOneOptions<UserDto>): Promise<UserFullDto> {
+    const user = await this.userRepository.findOne({ where: { ...filters.where, deleted: false }, relations: filters.relations });
 
     if (!user) {
       throw new NotFoundException(`Usuario no encontrado`);
     }
-    return UserMapper.toDto(user);
+    return UserMapper.toDtoFull(user);
   }
 
   /** Servicio para obtener un usuario por email
@@ -79,7 +79,7 @@ export class UsersService {
    */
   async findOneByEmail(email: string): Promise<UserFullDto | null> {
      const user = await this.userRepository.findOne({ 
-      where: { email, isActive: true },
+      where: { email, deleted: false },
       relations: ['roles', 'roles.permissions']
     });
     return user ? UserMapper.toDtoFull(user) : null;
@@ -91,11 +91,11 @@ export class UsersService {
    * @returns Usuario actualizado
    */
   async update(id: string, updateUserDto: UpdateUserDto): Promise<UserDto> {
-    const user = await this.findOne({ where: { id, isActive: true }, relations: ['roles'] });
+    const user = await this.findOne({ where: { id }, relations: ['roles'] });
 
-    let userRoles: Role[] = [];
+    let userRoles: RoleDto[] = [];
     if (updateUserDto.roleNames) {
-      const roles: Role[] = [];
+      const roles: RoleDto[] = [];
       for (const roleName of updateUserDto.roleNames) {
         const role = await this.rolesService.findOne({ where: { name: roleName } });
         if (!role) {
@@ -106,7 +106,7 @@ export class UsersService {
       userRoles = roles;
     }
 
-    const entity = UserMapper.toEntity(user, userRoles.length > 0 ? userRoles : user['roles']);
+    const entity = UserMapper.toEntity(user, userRoles.length > 0 ? userRoles : user.roles);
     this.userRepository.merge(entity, updateUserDto);
     
     const updatedUser = await this.userRepository.save(entity);
@@ -119,7 +119,10 @@ export class UsersService {
   async delete(id: string): Promise<void> {
     const user = await this.findOne({ where: { id, isActive: true } });
     user.isActive = false;
-    await this.userRepository.save(user);
+    user.deleted = true;
+    user.deletedAt = new Date();
+    const entity = UserMapper.toEntity(user, user.roles);
+    await this.userRepository.save(entity);
   }
 
 }

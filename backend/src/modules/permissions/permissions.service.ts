@@ -9,20 +9,22 @@ export class PermissionsService {
     private permissionsRepository: Repository<Permission>,
   ) {}
 
-
+  /** Obtiene todos los permisos */
   async findAll(): Promise<Permission[]> {
     return this.permissionsRepository.find();
   }
-
+    /** Obtiene un permiso por filtros */
     async findOne(filters: FindOneOptions<Permission>): Promise<Permission | null> {
         return this.permissionsRepository.findOne(filters);
     }
-
+    
+    /** Crea un nuevo permiso */
     async create(permissionData: Partial<Permission>): Promise<Permission> {
         const newPermission = this.permissionsRepository.create(permissionData);
         return this.permissionsRepository.save(newPermission);
     }
 
+    /** Actualiza un permiso existente */
     async update(id: string, permissionData: Partial<Permission>): Promise<Permission> {
         const permission = await this.permissionsRepository.findOne({ where: { id } });
         if (!permission) {
@@ -32,6 +34,7 @@ export class PermissionsService {
         return this.permissionsRepository.save(permission);
     }
 
+    /** Elimina un permiso por ID */
     async delete(id: string): Promise<void> {
         await this.permissionsRepository.delete(id);
     }

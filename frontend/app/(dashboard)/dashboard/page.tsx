@@ -12,23 +12,18 @@ export default function DashboardPage() {
       </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Card 1 */}
         <div className="bg-card border border-border rounded-lg p-6">
           <h3 className="text-lg font-semibold text-foreground mb-2">
             Total Usuarios
           </h3>
           <p className="text-3xl font-bold text-primary">150</p>
         </div>
-
-        {/* Card 2 */}
         <div className="bg-card border border-border rounded-lg p-6">
           <h3 className="text-lg font-semibold text-foreground mb-2">
             Roles Activos
           </h3>
           <p className="text-3xl font-bold text-primary">5</p>
         </div>
-
-        {/* Card 3 */}
         <div className="bg-card border border-border rounded-lg p-6">
           <h3 className="text-lg font-semibold text-foreground mb-2">
             Permisos
@@ -36,8 +31,6 @@ export default function DashboardPage() {
           <p className="text-3xl font-bold text-primary">24</p>
         </div>
       </div>
-
-      {/* User Info */}
       {user && (
         <div className="mt-8 bg-card border border-border rounded-lg p-6">
           <h2 className="text-xl font-semibold text-foreground mb-4">
