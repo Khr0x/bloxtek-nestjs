@@ -2,10 +2,7 @@ import { RefreshTokenPayloadDto } from "../dtos/refresh-token-payload.dto";
 import { RefreshToken } from "../entities/refresh-token.entity";
 
 export class RefreshTokenMapper {
-  /**
-   * Convierte la entidad RefreshToken a un DTO de payload
-   * (usado internamente para validación de tokens)
-   */
+
   static toPayloadDto(entity: RefreshToken): RefreshTokenPayloadDto {
     return {
       id: entity.id,

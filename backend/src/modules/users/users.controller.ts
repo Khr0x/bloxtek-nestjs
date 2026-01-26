@@ -1,7 +1,8 @@
 import { 
   Controller, Get, Post, Body, Patch, Param, Delete, 
   UseInterceptors, ClassSerializerInterceptor, ParseUUIDPipe, 
-  UseGuards
+  UseGuards,
+  Query
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dtos/create-user.dto';
@@ -24,14 +25,15 @@ export class UsersController {
 
   @Get()
   @Permissions('users:read')
-  async findAll() {
-    return await this.usersService.findAll();
+  async findAll(@Query() filters: any) {
+    const isActive = filters.isActive === 'false' ? false : true;
+    return await this.usersService.findAll({ where: {isActive}});
   }
 
   @Get(':id')
   @Permissions('users:read')
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return await this.usersService.findOne({ where: { id, isActive: true } });
+    return await this.usersService.findOne({ where: { id }, relations: ['roles', 'roles.permissions'] });
   }
 
   @Patch(':id')

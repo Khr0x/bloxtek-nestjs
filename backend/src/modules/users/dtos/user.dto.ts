@@ -16,4 +16,6 @@ export class UserRolesDto {
 export class UserFullDto extends UserDto {
     roles: UserRolesDto[];
     password: string;
+    deleted?: boolean;
+    deletedAt?: Date;
 }

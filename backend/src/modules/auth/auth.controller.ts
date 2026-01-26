@@ -106,18 +106,5 @@ export class AuthController {
     }
 
   }
-
- 
-  @Get('me-admin')
-  @UseGuards(JwtAuthGuard, AuthGuard)
-  @Roles('ADMIN')
-  async getProfileAdmin(@Request() req: any) {
-    const userId = req.user.id;
-    const user = await this.authService.me(userId);
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email
-    };
-  }
+  
 }

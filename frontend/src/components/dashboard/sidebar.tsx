@@ -7,7 +7,6 @@ import {
   Users, 
   Shield, 
   Key,
-  Settings,
   ChevronLeft
 } from 'lucide-react';
 import { useState } from 'react';
@@ -25,19 +24,14 @@ const menuItems = [
   },
   {
     title: 'Roles',
-    href: '/dashboard/roles',
+    href: '/roles',
     icon: Shield,
   },
   {
     title: 'Permisos',
-    href: '/dashboard/permissions',
+    href: '/permissions',
     icon: Key,
-  },
-  {
-    title: 'Configuración',
-    href: '/dashboard/settings',
-    icon: Settings,
-  },
+  }
 ];
 
 export function Sidebar() {

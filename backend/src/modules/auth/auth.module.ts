@@ -8,7 +8,6 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { RefreshTokenService } from './services/refresh-token.service';
 import { RefreshTokenModule } from './services/refresh-token.module';
 
 @Module({

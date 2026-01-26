@@ -34,6 +34,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (hasCheckedAuth.current) return;
+    
+    const publicPaths = ['/', '/login', '/register'];
+    if (publicPaths.includes(pathname)) {
+      setIsCheckingAuth(false);
+      hasCheckedAuth.current = true;
+      return;
+    }
+    
     hasCheckedAuth.current = true;
 
     const checkAuth = async () => {
@@ -43,20 +51,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userData);
         setIsAuthenticated(true);
         
-        // Extraer permisos de los roles
         const userPermissions = extractPermissions(userData);
         setPermissions(userPermissions);
       } catch (error) {
         setUser(null);
         setIsAuthenticated(false);
         setPermissions([]);
+        router.push('/login');
       } finally {
         setIsCheckingAuth(false);
       }
     };
 
     checkAuth();
-  }, []);
+  }, [pathname, router]);
 
   const extractPermissions = (userData: any): string[] => {
     if (!userData?.roles) return [];

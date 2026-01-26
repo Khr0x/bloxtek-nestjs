@@ -2,49 +2,59 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { api } from '@/lib/axios';
+import { useUsers } from '@/hooks';
+import { useRoles } from '@/hooks/useRoles';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  isActive: boolean;
-}
 
 export default function EditUserPage() {
   const router = useRouter();
   const params = useParams();
   const userId = params.id as string;
 
-  const [isLoading, setIsLoading] = useState(false);
+  const { getUserById, updateUser, isLoading: isUpdating } = useUsers();
+  const { roles, isLoading: rolesLoading, fetchRoles } = useRoles();
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     isActive: true,
+    rolesNames: [] as string[],
   });
 
   useEffect(() => {
-    fetchUser();
+    const loadData = async () => {
+      setIsFetching(true);
+      try {
+        const [userData] = await Promise.all([
+          getUserById(userId),
+          fetchRoles(),
+        ]);
+        
+        if (userData) {
+          setFormData({
+            name: userData.name,
+            email: userData.email,
+            isActive: userData.isActive,
+            rolesNames: userData.roles?.map((role) => role.name) || [],
+          });
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Error al cargar datos');
+      } finally {
+        setIsFetching(false);
+      }
+    };
+
+    loadData();
   }, [userId]);
 
-  const fetchUser = async () => {
-    try {
-      setIsFetching(true);
-      const response = await api.get(`/api/v1/users/${userId}`);
-      const user: User = response.data;
-      setFormData({
-        name: user.name,
-        email: user.email,
-        isActive: user.isActive,
-      });
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al cargar usuario');
-    } finally {
-      setIsFetching(false);
+  const handleRoleChange = (roleName: string, checked: boolean) => {
+    if (checked) {
+      setFormData({ ...formData, rolesNames: [...formData.rolesNames, roleName] });
+    } else {
+      setFormData({ ...formData, rolesNames: formData.rolesNames.filter(r => r !== roleName) });
     }
   };
 
@@ -53,13 +63,15 @@ export default function EditUserPage() {
     setError(null);
 
     try {
-      setIsLoading(true);
-      await api.patch(`/api/v1/users/${userId}`, formData);
+      await updateUser(userId, {
+        name: formData.name,
+        email: formData.email,
+        isActive: formData.isActive,
+        roleNames: formData.rolesNames,
+      });
       router.push('/users');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al actualizar usuario');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -73,7 +85,6 @@ export default function EditUserPage() {
 
   return (
     <div>
-      {/* Header */}
       <div className="mb-6">
         <Link
           href="/users"
@@ -87,9 +98,9 @@ export default function EditUserPage() {
           Actualiza la información del usuario
         </p>
       </div>
-
-      {/* Form */}
-      <div className="max-w-2xl">
+      
+      <div className="flex justify-center">
+        <div className="w-full max-w-2xl">
         <div className="bg-card border border-border rounded-lg p-6">
           {error && (
             <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
@@ -98,7 +109,6 @@ export default function EditUserPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Name */}
             <div>
               <label
                 htmlFor="name"
@@ -117,11 +127,9 @@ export default function EditUserPage() {
                   setFormData({ ...formData, name: e.target.value })
                 }
                 className="w-full px-4 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
-                disabled={isLoading}
+                disabled={isUpdating}
               />
             </div>
-
-            {/* Email */}
             <div>
               <label
                 htmlFor="email"
@@ -140,11 +148,44 @@ export default function EditUserPage() {
                   setFormData({ ...formData, email: e.target.value })
                 }
                 className="w-full px-4 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
-                disabled={isLoading}
+                disabled={isUpdating}
               />
             </div>
-
-            {/* Active Status */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Roles
+              </label>
+              {rolesLoading ? (
+                <div className="text-sm text-muted-foreground">Cargando roles...</div>
+              ) : (
+                <div className="space-y-2">
+                  {roles.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No hay roles disponibles</p>
+                  ) : (
+                    roles.map((role) => (
+                      <label
+                        key={role.id}
+                        className="flex items-center gap-2 p-3 bg-background border border-input rounded-lg hover:bg-accent/50 cursor-pointer transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.rolesNames.includes(role.name)}
+                          onChange={(e) => handleRoleChange(role.name, e.target.checked)}
+                          disabled={isUpdating}
+                          className="h-4 w-4 rounded border-input text-primary focus:ring-2 focus:ring-ring"
+                        />
+                        <div>
+                          <div className="text-sm font-medium text-foreground">{role.name}</div>
+                          {role.description && (
+                            <div className="text-xs text-muted-foreground">{role.description}</div>
+                          )}
+                        </div>
+                      </label>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
             <div>
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
@@ -154,22 +195,20 @@ export default function EditUserPage() {
                     setFormData({ ...formData, isActive: e.target.checked })
                   }
                   className="h-4 w-4 rounded border-input text-primary focus:ring-2 focus:ring-ring"
-                  disabled={isLoading}
+                  disabled={isUpdating}
                 />
                 <span className="text-sm font-medium text-foreground">
                   Usuario activo
                 </span>
               </label>
             </div>
-
-            {/* Actions */}
             <div className="flex items-center gap-4 pt-4">
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isUpdating}
                 className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Guardando...' : 'Guardar Cambios'}
+                {isUpdating ? 'Guardando...' : 'Guardar Cambios'}
               </button>
               <Link
                 href="/users"
@@ -180,6 +219,7 @@ export default function EditUserPage() {
             </div>
           </form>
         </div>
+      </div>
       </div>
     </div>
   );

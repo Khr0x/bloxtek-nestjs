@@ -14,7 +14,12 @@ export class AuthService {
     private refreshTokenService: RefreshTokenService,
   ) {}
 
-
+  /**
+   * Valida las credenciales de un usuario
+   * @param email - Email del usuario
+   * @param pass - Contraseña en texto plano
+   * @returns Usuario si las credenciales son válidas, null si no
+   */
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.usersService.findOneByEmail(email);
     if (user && await comparePassword(pass, user.password)) {
@@ -24,6 +29,11 @@ export class AuthService {
     return null;
   }
 
+  /**
+   * Realiza el login de un usuario y genera los tokens
+   * @param user - Usuario autenticado
+   * @returns Tokens de acceso y refresh
+   */
   async login(user: any) {
     const payload = { 
       sub: user.id, 
@@ -44,10 +54,19 @@ export class AuthService {
     };
   }
 
+  /**
+   * Registra un nuevo usuario
+   * @param createUserDto - Datos para crear el usuario
+   */
   async register(createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
+  /**
+   * Obtiene la información del usuario actual
+   * @param userId - ID del usuario
+   * @returns Información del usuario
+   */
   async me(userId: string) {
     const user = await this.usersService.findOne({ 
       where: { id: userId },
@@ -59,6 +78,11 @@ export class AuthService {
     return user;
   }
 
+  /**
+   * Genera un nuevo refresh token para un usuario
+   * @param userId - ID del usuario
+   * @returns Token de refresh generado
+   */
   private async generateRefreshToken(userId: string): Promise<string> {
     const token = await genSalt(20);
     const hashedToken = await hash(token, 10);
@@ -75,7 +99,11 @@ export class AuthService {
     return token;
   }
 
-  /** Servicio para refrescar tokens */
+  /**
+   * Refresca los tokens de acceso y refresh token
+   * @param oldToken - Token de refresh antiguo
+   * @returns Nuevos tokens de acceso y refresh
+   */
   async refresh(oldToken: string) {
 
      const payload = await this.refreshTokenService.findValidToken(oldToken);
