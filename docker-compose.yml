@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+
+  db:
+    image: postgres:15-alpine
+    container_name: bloxtek_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - bloxtek-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bloxtek_backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT}:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      PASSWORD_SALT_ROUNDS: ${PASSWORD_SALT_ROUNDS}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      MANAGER_EMAIL: ${MANAGER_EMAIL}
+      MANAGER_PASSWORD: ${MANAGER_PASSWORD}
+      USER_EMAIL: ${USER_EMAIL}
+      USER_PASSWORD: ${USER_PASSWORD}
+      FRONTEND_URL: ${FRONTEND_URL}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+    networks:
+      - bloxtek-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bloxtek_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "3001:3001"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:${BACKEND_PORT}
+    networks:
+      - bloxtek-network
+
+volumes:
+  pg_data:
+
+networks:
+  bloxtek-network:
+    driver: bridge

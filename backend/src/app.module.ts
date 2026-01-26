@@ -1,10 +1,33 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ConfigModule } from '@nestjs/config';
+import { envSchema } from './config/env.schema';
+import { DatabaseModule } from './database/database.module';
+import { UsersModule } from './modules/users/users.module';
+import { RolesModule } from './modules/roles/roles.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
+import { InitSeeder } from './database/seeds/init.seeder';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
-  imports: [Config],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env.local', '.env'],
+      validationSchema: envSchema,
+      validationOptions: {
+        allowUnknown: true,
+        abortEarly: false,
+      },
+    }),
+    DatabaseModule,
+    AuthModule,
+    UsersModule,
+    RolesModule,
+    PermissionsModule
+  ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService,  InitSeeder],
 })
 export class AppModule {}
