@@ -1,34 +1,27 @@
 version: '3.8'
 
 services:
-  # -----------------------------------------------------------------
-  # 1. Base de Datos (PostgreSQL)
-  # Cumple con: "Uso de una base de datos" [cite: 19]
-  # -----------------------------------------------------------------
+
   db:
     image: postgres:15-alpine
     container_name: bloxtek_db
     restart: always
     environment:
-      [cite_start]POSTGRES_USER: ${DB_USER:-postgres}       # Uso de variables de entorno 
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-root}
-      POSTGRES_DB: ${DB_NAME:-bloxtek_db}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
-      - "5432:5432" # Expuesto para que puedas inspeccionar la BD desde tu host (TablePlus, DBeaver)
+      - "5432:5432"
     volumes:
-      - pg_data:/var/lib/postgresql/data # Persistencia de datos
+      - pg_data:/var/lib/postgresql/data
     networks:
       - bloxtek-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # -----------------------------------------------------------------
-  # 2. Backend (NestJS)
-  # Cumple con: "Backend debe utilizar NestJS" y "Dockerización" [cite: 18, 22]
-  # -----------------------------------------------------------------
   backend:
     build:
       context: ./backend
@@ -37,38 +30,33 @@ services:
     restart: always
     depends_on:
       db:
-        condition: service_healthy # Espera a que la BD esté lista antes de iniciar
+        condition: service_healthy
     ports:
-      - "${BACKEND_PORT:-3000}:3000" # Mapea el puerto del contenedor al host
+      - "${BACKEND_PORT}:3000"
     environment:
-      # Node
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV}
       PORT: 3000
-      
-      # Database
       DB_HOST: db
       DB_PORT: 5432
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-root}
-      DB_NAME: ${DB_NAME:-bloxtek_db}
-      
-      # JWT
-      JWT_SECRET: ${JWT_SECRET:-secreto_super_seguro}
-      JWT_EXPIRATION: ${JWT_EXPIRATION:-15m}
-      
-      # Security
-      PASSWORD_SALT_ROUNDS: ${PASSWORD_SALT_ROUNDS:-10}
-      
-      # Seeding
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@bloxtek.com}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin1234*!}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION}
+      PASSWORD_SALT_ROUNDS: ${PASSWORD_SALT_ROUNDS}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      MANAGER_EMAIL: ${MANAGER_EMAIL}
+      MANAGER_PASSWORD: ${MANAGER_PASSWORD}
+      USER_EMAIL: ${USER_EMAIL}
+      USER_PASSWORD: ${USER_PASSWORD}
+      FRONTEND_URL: ${FRONTEND_URL}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
     networks:
       - bloxtek-network
 
-  # -----------------------------------------------------------------
-  # 3. Frontend (Next.js)
-  # Cumple con: "Frontend debe estar construido con Next.js" y "Dockerización" [cite: 17, 22]
-  # -----------------------------------------------------------------
   frontend:
     build:
       context: ./frontend
@@ -78,12 +66,9 @@ services:
     depends_on:
       - backend
     ports:
-      - "3001:3000"
+      - "3001:3001"
     environment:
-      # URL interna para SSR (Server Side Rendering)
-      API_URL_INTERNAL: http://backend:3000
-      # URL pública para el navegador (Client Side)
-      NEXT_PUBLIC_API_URL: http://localhost:${BACKEND_PORT:-3000}
+      NEXT_PUBLIC_API_URL: http://localhost:${BACKEND_PORT}
     networks:
       - bloxtek-network
 

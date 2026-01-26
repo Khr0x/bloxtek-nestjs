@@ -1,41 +1,30 @@
 # ========================================
-# ETAPA 1: Construcción (Builder)
-# ========================================
 FROM node:20-alpine AS builder
 
-# Instalar pnpm globalmente
-RUN npm install -g pnpm
-
-# Directorio de trabajo
 WORKDIR /app
 
 # Copiar archivos de dependencias
-COPY package.json pnpm-lock.yaml ./
+COPY package*.json ./
 
-# Instalar dependencias (incluyendo devDependencies para el build)
-RUN pnpm install --frozen-lockfile
+# Instalar dependencias
+RUN npm ci
 
 # Copiar el código fuente
 COPY . .
 
-# Construir la aplicación NestJS (crea la carpeta /dist)
-RUN pnpm run build
+# Construir la aplicación NestJS
+RUN npm run build
 
-# ========================================
-# ETAPA 2: Producción (Runner)
 # ========================================
 FROM node:20-alpine
 
-# Instalar pnpm globalmente
-RUN npm install -g pnpm
-
 WORKDIR /app
 
-# Copiar package.json y pnpm-lock.yaml
-COPY package.json pnpm-lock.yaml ./
+# Copiar archivos de dependencias
+COPY package*.json ./
 
 # Instalar SOLO dependencias de producción
-RUN pnpm install --frozen-lockfile --prod
+RUN npm ci --only=production
 
 # Copiar el código compilado desde la etapa de construcción
 COPY --from=builder /app/dist ./dist
@@ -55,4 +44,4 @@ EXPOSE 3000
 ENV NODE_ENV=production
 
 # Comando de inicio
-CMD ["pnpm", "run", "start:prod"]
+CMD ["npm", "run", "start:prod"]
