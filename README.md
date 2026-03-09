@@ -1,4 +1,4 @@
-# Bloxtek Technical Assessment
+# Bloxtek
 
 Este repositorio contiene una aplicación completa con backend (NestJS + TypeORM + PostgreSQL) y frontend (Next.js + Tailwind). A continuación se describen los requisitos, configuración y pasos para ejecutar la aplicación tanto en local como con Docker.
 
